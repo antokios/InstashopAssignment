@@ -14,30 +14,43 @@ Parse.Cloud.beforeSave('Test', () => {
 });
 
 Parse.Cloud.define('login', async req => {
-  const { params: { username, password } } = req;
+  const {
+    params: { username, password },
+  } = req;
+
   const user = await Parse.User.logIn(username, password);
-  if (user.error) {
-    return user.error
-  }
 
   return user;
 });
 
-Parse.Cloud.define('fetchLandmarks', async req => {
-  const query = new Parse.Query('Landmark');
+const modifyLandmark = async (req, query) => {
+  const { objectId } = req.params;
+  objectId ? query.equalTo('objectId', objectId) : query.ascending('order');
 
-  // check if user sets a specific object id and fetch only that one,
-  // otherwise fetch all and sort by ascending order
-  if (req.params.objectId) {
-    query.equalTo('objectId', req.params.objectId)
-  }
-
-  query.ascending('order');
-  query.select('objectId', 'title', 'short_info', 'photo_thumb', 'photo');
+  // query.select('objectId', 'title', 'short_info', 'photo_thumb', 'photo');
   const results = await query.find();
 
-  return results;
-},
-{
-  requireUser: true
+  const modifiedResults = results.map(landmark => ({
+    __id: landmark.id,
+    title: landmark.get('title'),
+    short_info: landmark.get('short_info'),
+    photo_thumb: landmark.get('photo_thumb'),
+    photo: landmark.get('photo'),
+    ...(objectId && {
+      url: landmark.get('url'),
+      description: landmark.get('description'),
+      location: landmark.get('location'),
+    }),
+    // order: landmark.get('order')  // Just to check if ordering is functioning
+  }));
+  return modifiedResults;
+};
+
+Parse.Cloud.define('fetchLandmarks', async req => {
+  const Landmark = Parse.Object.extend('Landmark');
+  const query = new Parse.Query(Landmark);
+
+  const modifiedResults = await modifyLandmark(req, query);
+
+  return modifiedResults;
 });
