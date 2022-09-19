@@ -20,7 +20,12 @@ Parse.Cloud.define('login', async req => {
 
   const user = await Parse.User.logIn(username, password);
 
-  return user;
+  const modifiedUser = {
+    objectId: user.id,
+    sessionToken: user.get('sessionToken'),
+  };
+
+  return modifiedUser;
 });
 
 const modifyLandmark = async (req, query) => {
@@ -53,4 +58,19 @@ Parse.Cloud.define('fetchLandmarks', async req => {
   const modifiedResults = await modifyLandmark(req, query);
 
   return modifiedResults;
+});
+
+Parse.Cloud.define('saveLandmark', async req => {
+  const Landmark = Parse.Object.extend('Landmark');
+  const query = new Parse.Query(Landmark);
+
+  const { objectId, payload } = req.params;
+
+  query.equalTo('objectId', objectId);
+  const results = await query.first();
+
+  console.log(results)
+
+  results.set("title", "a title");
+  results.save();
 });
