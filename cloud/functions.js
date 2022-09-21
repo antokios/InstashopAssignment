@@ -14,6 +14,7 @@ Parse.Cloud.beforeSave('Test', () => {
 });
 
 Parse.Cloud.define('login', async req => {
+  Parse.User.enableUnsafeCurrentUser();
   const {
     params: { username, password },
   } = req;
@@ -24,6 +25,15 @@ Parse.Cloud.define('login', async req => {
     objectId: user.id,
     sessionToken: user.get('sessionToken'),
   };
+
+  Parse.User.become(`${modifiedUser.sessionToken}`).then(
+    function (user) {
+      console.log(`The current user is now set to: ${user.id}`);
+    },
+    function (error) {
+      console.log(error);
+    }
+  );
 
   return modifiedUser;
 });
@@ -61,6 +71,10 @@ Parse.Cloud.define('fetchLandmarks', async req => {
 });
 
 Parse.Cloud.define('saveLandmark', async req => {
+  if (!req.user.authenticated()) {
+    throw 'User is not authenticated';
+  }
+
   const Landmark = Parse.Object.extend('Landmark');
   const query = new Parse.Query(Landmark);
 
@@ -69,8 +83,64 @@ Parse.Cloud.define('saveLandmark', async req => {
   query.equalTo('objectId', objectId);
   const results = await query.first();
 
-  console.log(results)
+  if (!results) {
+    throw 'Object not found';
+  }
 
-  results.set("title", "a title");
-  results.save();
+  const keys = Object.keys(payload);
+
+  keys.forEach(key => {
+    if (results.has(key)) {
+      results.set(key, payload[key]);
+    } else {
+      throw `Property: ${key} does not exist on object`;
+    }
+  });
+
+  // console.log(req.user.get('sessionToken'))
+  return results.save();
 });
+
+// /// Check if user is on the Role
+// /// ---------------------------------------------------------------------------------------
+// async function userInRole({ roleName, user }) {
+//   const query = new Parse.Query(Parse.Role);
+//   query.equalTo('name', roleName);
+//   query.equalTo('users', user);
+//   return await query.first({ useMasterKey: true });
+// }
+
+// Parse.Cloud.define('testFunc', async req => {
+//   const roleACL = new Parse.ACL();
+//   roleACL.setPublicReadAccess(true);
+//   roleACL.setWriteAccess(`${Parse.User.current()}`, true);
+
+//   const role = new Parse.Role('Admin', roleACL);
+
+//   role.save().then(function () {
+//     role.getUsers().add(Parse.User.current());
+//     role.save().then(function () {
+//       console.log(`Role Created: ${role.id}`);
+//     });
+//   });
+// });
+
+// Parse.Cloud.define('checkUser', async req => {
+//   // get user from request
+//   // const user = await Parse.User.current();
+//   const user = req.user;
+
+//   // check if the user are on the admin role
+//   const isAdmin = await userInRole({ roleName: 'administrator', user })
+//   if (!isAdmin) {
+//     throw `${user.get('username')} is not an administrator. You don't have permission to continue.`
+//   }
+
+//   return `${user.get('username')} is an administrator. Permission granted.`;
+
+//   // if (user.authenticated()) {
+//   //   return 'auth success';
+//   // }
+
+//   // throw 'auth failed';
+// });

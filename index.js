@@ -20,19 +20,19 @@ const apiConfig = {
   liveQuery: {
     classNames: ['Posts', 'Comments'], // List of classes to support for query subscriptions
   },
-  classLevelPermissions: {
-    find: {
-      requiresAuthentication: false,
-      'role:admin': false,
-    },
-    get: {
-      requiresAuthentication: false,
-      'role:admin': false,
-    },
-    create: { 'role:admin': true },
-    update: { 'role:admin': true },
-    delete: { 'role:admin': true },
-  },
+  // classLevelPermissions: {
+  //   find: {
+  //     requiresAuthentication: false,
+  //     'role:admin': false,
+  //   },
+  //   get: {
+  //     requiresAuthentication: false,
+  //     'role:admin': false,
+  //   },
+  //   create: { 'role:admin': true },
+  //   update: { 'role:admin': true },
+  //   delete: { 'role:admin': true },
+  // },
 };
 
 const dashboardConfig = {
