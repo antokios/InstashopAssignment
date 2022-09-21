@@ -60,6 +60,11 @@ const app = express();
 // Serve static assets from the /public folder
 app.use('/public', express.static(path.join(__dirname, '/public')));
 
+// app.use('/parse/functions/login', (req, res, next) => {
+//   // Parse.Cloud.login()
+//   console.log(req.body)
+// })
+
 // Serve the Parse API on the /parse URL prefix
 const mountPath = process.env.PARSE_MOUNT || '/parse';
 if (!test) {
